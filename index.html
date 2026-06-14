@@ -16,17 +16,20 @@
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body class="bg-gray-100">
-  <!-- React 會渲染在這個 div 裡面 -->
   <div id="root"></div>
 
-  <!-- 我們的應用程式邏輯 -->
   <script type="text/babel">
     const { useState } = React;
 
     // ============================================================================
     // ⚠️ 您的 Google Apps Script URL
     // ============================================================================
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx9HLXBILdN2VO0T28pu5xj33dt0dlMHL-8BD9hEICpdA9St-mEHEMU-2S9puyZ1iZzZg/exec";
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyNzmSwDfd_LgMNqrqmI0XEKPJNmg6lgTnwiSD5jiYm330gIfe5gj7yYR4uoYexKdtqSg/exec";
+
+    // ============================================================================
+    // 🏷️ 應用程式版本號設定
+    // ============================================================================
+    const APP_VERSION = "YS1.1";
 
     function App() {
       const today = new Date().toISOString().split('T')[0];
@@ -70,9 +73,10 @@
 
         const totalAmount = (Number(formData.foodPrice) || 0) + (Number(formData.drinkPrice) || 0);
         const drinkSweetnessIce = `${formData.drinkSweetness}-${formData.drinkIce}`;
-        const noMushroomText = formData.noMushroom ? '是' : '否';
         
-        // 新增合併品名與金額的邏輯 (如果有填金額就加上 $，沒填就只顯示品名)
+        // 🌟 修改這裡：有勾選就給打勾符號，沒勾選就給空白
+        const noMushroomText = formData.noMushroom ? '✔' : '';
+        
         const foodNamePrice = formData.foodPrice ? `${formData.foodName} $${formData.foodPrice}` : formData.foodName;
         const drinkNamePrice = formData.drinkPrice ? `${formData.drinkName} $${formData.drinkPrice}` : formData.drinkName;
 
@@ -150,7 +154,7 @@
                 輕鬆點餐，美味不漏接
               </p>
               <p className="text-green-700 text-sm text-right relative z-10 font-bold mt-1">
-                by夜綠素 version:YS1.1
+                by夜綠素 version:{APP_VERSION}
               </p>
             </div>
 
