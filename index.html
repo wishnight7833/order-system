@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>點餐小助手</title>
+  
+  <!-- 載入 Tailwind CSS 用於美化 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- 載入 React 和 ReactDOM -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  
+  <!-- 載入 Babel 以便在瀏覽器中編譯 JSX -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- 載入 Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-gray-100">
+  <!-- React 會渲染在這個 div 裡面 -->
+  <div id="root"></div>
+
+  <!-- 我們的應用程式邏輯 -->
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    // ============================================================================
+    // ⚠️ 請確保下方的 URL 是以 /exec 結尾，且不能有空白
+    // ============================================================================
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyNzmSwDfd_LgMNqrqmI0XEKPJNmg6lgTnwiSD5jiYm330gIfe5gj7yYR4uoYexKdtqSg/exec";
+
+    function App() {
+      const today = new Date().toISOString().split('T')[0];
+
+      const [formData, setFormData] = useState({
+        nickname: '',
+        date: today,
+        foodName: '',
+        foodPortion: '正常',
+        foodSpiciness: '不辣',
+        noMushroom: false,
+        foodNote: '',
+        drinkName: '',
+        drinkSweetness: '無糖',
+        drinkIce: '去冰',
+        drinkNote: ''
+      });
+
+      const [status, setStatus] = useState('idle');
+
+      // 確保每次渲染後，圖示都能正確顯示
+      useEffect(() => {
+        lucide.createIcons();
+      });
+
+      const handleInputChange = (e) => {
+        const { name, value, type, checked } = e.target;
+        const inputValue = type === 'checkbox' ? checked : value;
+        setFormData(prev => ({ ...prev, [name]: inputValue }));
+      };
+
+      const handleSubmit = async (e) => {
+        e.preventDefault();
+        
+        if (!formData.nickname.trim()) {
+          alert("請填寫暱稱！");
+          return;
+        }
+
+        setStatus('submitting');
+
+        const now = new Date();
+        const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+        const payload = {
+          timestamp,
+          ...formData
+        };
+
+        if (GOOGLE_SCRIPT_URL === "YOUR_GOOGLE_SCRIPT_WEB_APP_URL_HERE") {
+          setTimeout(() => {
+            console.log("模擬送出資料：", payload);
+            setStatus('success');
+          }, 1000);
+          return;
+        }
+
+        try {
+          await fetch(GOOGLE_SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: {
+              'Content-Type': 'text/plain;charset=utf-8', 
+            },
+            body: JSON.stringify(payload)
+          });
+          
+          setStatus('success');
+        } catch (error) {
+          console.error("送出失敗:", error);
+          setStatus('error');
+        }
+      };
+
+      const resetForm = () => {
+        setFormData({
+          nickname: '',
+          date: today,
+          foodName: '',
+          foodPortion: '正常',
+          foodSpiciness: '不辣',
+          noMushroom: false,
+          foodNote: '',
+          drinkName: '',
+          drinkSweetness: '無糖',
+          drinkIce: '去冰',
+          drinkNote: ''
+        });
+        setStatus('idle');
+      };
+
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100 py-8 px-4 font-sans text-gray-800">
+          <div className="max-w-lg mx-auto bg-white rounded-3xl shadow-xl overflow-hidden border border-orange-100">
+            
+            <div className="bg-orange-500 p-6 text-center relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
+                <svg width="100" height="100" fill="white" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="20" cy="20" r="4" />
+                  <circle cx="80" cy="80" r="4" />
+                  <circle cx="80" cy="20" r="4" />
+                  <circle cx="20" cy="80" r="4" />
+                </svg>
+              </div>
+              <h1 className="text-3xl font-bold text-white mb-2 relative z-10 flex items-center justify-center gap-2">
+                <i data-lucide="utensils-crossed" className="w-7 h-7"></i>
+                點餐小助手
+              </h1>
+              <p className="text-orange-100 text-sm relative z-10">
+                輕鬆點餐，美味不漏接
+              </p>
+              <p className="text-green-700 text-sm text-right relative z-10 font-bold mt-1">
+                by夜綠素 version:YS1.0
+              </p>
+            </div>
+
+            {status === 'success' ? (
+              <div className="p-10 text-center flex flex-col items-center justify-center min-h-[400px]">
+                <div className="text-green-500 mb-4 animate-bounce flex justify-center">
+                    <i data-lucide="check-circle-2" className="w-16 h-16"></i>
+                </div>
+                <h2 className="text-2xl font-bold text-gray-800 mb-2">送出成功！</h2>
+                <p className="text-gray-600 mb-8">您的點餐資訊已記錄。</p>
+                <button 
+                  onClick={resetForm}
+                  className="px-6 py-3 bg-orange-100 text-orange-600 font-semibold rounded-full hover:bg-orange-200 transition-colors"
+                >
+                  再點一份
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-8">
+                
+                {GOOGLE_SCRIPT_URL === "YOUR_GOOGLE_SCRIPT_WEB_APP_URL_HERE" && (
+                  <div className="bg-blue-50 border border-blue-200 text-blue-700 p-3 rounded-xl flex gap-3 items-start text-sm">
+                    <i data-lucide="info" className="w-5 h-5 shrink-0 mt-0.5"></i>
+                    <p>
+                      目前為<strong className="mx-1">展示模式</strong>。若要寫入試算表，請參考教學設定 Google Apps Script，並替換程式碼中的 <code>GOOGLE_SCRIPT_URL</code>。
+                    </p>
+                  </div>
+                )}
+
+                {status === 'error' && (
+                  <div className="bg-red-50 text-red-600 p-3 rounded-xl flex gap-3 items-center text-sm border border-red-200">
+                    <i data-lucide="alert-circle" className="w-5 h-5"></i>
+                    <p>送出失敗，請檢查網路連線或系統設定。</p>
+                  </div>
+                )}
+
+                <section className="space-y-4">
+                  <h2 className="text-lg font-bold text-gray-800 border-b-2 border-orange-200 pb-2 flex items-center gap-2">
+                    <i data-lucide="user" className="w-5 h-5 text-orange-500"></i>
+                    基本資訊
+                  </h2>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium text-gray-700">暱稱 <span className="text-red-500">*</span></label>
+                      <input
+                        type="text"
+                        name="nickname"
+                        required
+                        placeholder="請輸入您的暱稱"
+                        value={formData.nickname}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all outline-none"
+                      />
+                    </div>
+                    
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium text-gray-700">開動日期</label>
+                      <div className="relative">
+                        <input
+                          type="date"
+                          name="date"
+                          value={formData.date}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all outline-none bg-white"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <section className="space-y-4 bg-orange-50/50 p-4 rounded-2xl border border-orange-100">
+                  <h2 className="text-lg font-bold text-orange-800 flex items-center gap-2">
+                    <i data-lucide="utensils-crossed" className="w-5 h-5 text-orange-600"></i>
+                    吃的
+                  </h2>
+                  
+                  <div className="space-y-4">
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium text-gray-700">品名</label>
+                      <input
+                        type="text"
+                        name="foodName"
+                        placeholder="例如：排骨便當"
+                        value={formData.foodName}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-2.5 rounded-xl border border-orange-200 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all outline-none"
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="block text-sm font-medium text-gray-700">主食份量</label>
+                        <select
+                          name="foodPortion"
+                          value={formData.foodPortion}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-2.5 rounded-xl border border-orange-200 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all outline-none bg-white"
+                        >
+                          <option value="正常">正常</option>
+                          <option value="飯少">飯少</option>
+                          <option value="半飯">半飯</option>
+                          <option value="加飯">加飯</option>
+                          <option value="麵少">麵少</option>
+                          <option value="加麵">加麵</option>
+                        </select>
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <label className="block text-sm font-medium text-gray-700">辣度</label>
+                        <select
+                          name="foodSpiciness"
+                          value={formData.foodSpiciness}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-2.5 rounded-xl border border-orange-200 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all outline-none bg-white"
+                        >
+                          <option value="不辣">不辣</option>
+                          <option value="微辣">微辣</option>
+                          <option value="小辣">小辣</option>
+                          <option value="中辣">中辣</option>
+                          <option value="大辣">大辣</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 px-1">
+                      <input
+                        type="checkbox"
+                        id="noMushroom"
+                        name="noMushroom"
+                        checked={formData.noMushroom}
+                        onChange={handleInputChange}
+                        className="w-5 h-5 text-orange-500 border-gray-300 rounded focus:ring-orange-500 cursor-pointer accent-orange-500"
+                      />
+                      <label htmlFor="noMushroom" className="text-sm font-medium text-gray-700 cursor-pointer select-none">
+                        不菇 (不要香菇、金針菇等任何菇類) 🍄❌
+                      </label>
+                    </div>
+                    
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium text-gray-700">備註 (選填)</label>
+                      <input
+                        type="text"
+                        name="foodNote"
+                        placeholder="例如：不要香菜、多一點醬"
+                        value={formData.foodNote}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-2.5 rounded-xl border border-orange-200 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all outline-none"
+                      />
+                    </div>
+                  </div>
+                </section>
+
+                <section className="space-y-4 bg-amber-50/50 p-4 rounded-2xl border border-amber-100">
+                  <h2 className="text-lg font-bold text-amber-800 flex items-center gap-2">
+                    <i data-lucide="coffee" className="w-5 h-5 text-amber-600"></i>
+                    喝的
+                  </h2>
+                  
+                  <div className="space-y-4">
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium text-gray-700">品名</label>
+                      <input
+                        type="text"
+                        name="drinkName"
+                        placeholder="例如：珍珠奶茶"
+                        value={formData.drinkName}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-2.5 rounded-xl border border-amber-200 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all outline-none"
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="block text-sm font-medium text-gray-700">甜度</label>
+                        <select
+                          name="drinkSweetness"
+                          value={formData.drinkSweetness}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-2.5 rounded-xl border border-amber-200 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all outline-none bg-white"
+                        >
+                          <option value="正常糖">正常糖</option>
+                          <option value="少糖">少糖 (8分)</option>
+                          <option value="半糖">半糖 (5分)</option>
+                          <option value="微糖">微糖 (3分)</option>
+                          <option value="一分糖">一分糖</option>
+                          <option value="無糖">無糖</option>
+                        </select>
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <label className="block text-sm font-medium text-gray-700">冰塊</label>
+                        <select
+                          name="drinkIce"
+                          value={formData.drinkIce}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-2.5 rounded-xl border border-amber-200 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all outline-none bg-white"
+                        >
+                          <option value="正常冰">正常冰</option>
+                          <option value="少冰">少冰</option>
+                          <option value="微冰">微冰</option>
+                          <option value="去冰">去冰</option>
+                          <option value="完全去冰">完全去冰</option>
+                          <option value="常溫">常溫</option>
+                          <option value="熱">熱</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium text-gray-700">備註 (選填)</label>
+                      <input
+                        type="text"
+                        name="drinkNote"
+                        placeholder="例如：換燕麥奶、加波霸"
+                        value={formData.drinkNote}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-2.5 rounded-xl border border-amber-200 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all outline-none"
+                      />
+                    </div>
+                  </div>
+                </section>
+
+                <button
+                  type="submit"
+                  disabled={status === 'submitting'}
+                  className={`w-full py-3.5 rounded-xl font-bold text-white shadow-lg flex items-center justify-center gap-2 transition-all 
+                    ${status === 'submitting' 
+                      ? 'bg-orange-400 cursor-not-allowed' 
+                      : 'bg-orange-500 hover:bg-orange-600 hover:shadow-orange-500/30 hover:-translate-y-0.5'}`}
+                >
+                  {status === 'submitting' ? (
+                    <span className="flex items-center gap-2">
+                      <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      處理中...
+                    </span>
+                  ) : (
+                    <>
+                      <i data-lucide="send" className="w-5 h-5"></i>
+                      確認送出
+                    </>
+                  )}
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
