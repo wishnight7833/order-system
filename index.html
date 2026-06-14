@@ -35,11 +35,13 @@
         nickname: '',
         date: today,
         foodName: '',
+        foodPrice: '',
         foodPortion: '正常',
-        foodSpiciness: '不辣',
+        foodSpiciness: '不調整',
         noMushroom: false,
         foodNote: '',
         drinkName: '',
+        drinkPrice: '',
         drinkSweetness: '無糖',
         drinkIce: '去冰',
         drinkNote: ''
@@ -66,9 +68,22 @@
         const now = new Date();
         const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
+        const totalAmount = (Number(formData.foodPrice) || 0) + (Number(formData.drinkPrice) || 0);
+        const drinkSweetnessIce = `${formData.drinkSweetness}-${formData.drinkIce}`;
+        const noMushroomText = formData.noMushroom ? '是' : '否';
+        
+        // 新增合併品名與金額的邏輯 (如果有填金額就加上 $，沒填就只顯示品名)
+        const foodNamePrice = formData.foodPrice ? `${formData.foodName} $${formData.foodPrice}` : formData.foodName;
+        const drinkNamePrice = formData.drinkPrice ? `${formData.drinkName} $${formData.drinkPrice}` : formData.drinkName;
+
         const payload = {
           timestamp,
-          ...formData
+          ...formData,
+          foodNamePrice,
+          drinkNamePrice,
+          drinkSweetnessIce,
+          noMushroomText,
+          totalAmount
         };
 
         if (GOOGLE_SCRIPT_URL === "YOUR_GOOGLE_SCRIPT_WEB_APP_URL_HERE") {
@@ -100,11 +115,13 @@
           nickname: '',
           date: today,
           foodName: '',
+          foodPrice: '',
           foodPortion: '正常',
-          foodSpiciness: '不辣',
+          foodSpiciness: '不調整',
           noMushroom: false,
           foodNote: '',
           drinkName: '',
+          drinkPrice: '',
           drinkSweetness: '無糖',
           drinkIce: '去冰',
           drinkNote: ''
@@ -133,7 +150,7 @@
                 輕鬆點餐，美味不漏接
               </p>
               <p className="text-green-700 text-sm text-right relative z-10 font-bold mt-1">
-                by夜綠素 version:YS1.0
+                by夜綠素 version:YS1.1
               </p>
             </div>
 
@@ -212,16 +229,30 @@
                   </h2>
                   
                   <div className="space-y-4">
-                    <div className="space-y-1">
-                      <label className="block text-sm font-medium text-gray-700">品名</label>
-                      <input
-                        type="text"
-                        name="foodName"
-                        placeholder="例如：排骨便當"
-                        value={formData.foodName}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-2.5 rounded-xl border border-orange-200 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all outline-none"
-                      />
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-1 col-span-2">
+                        <label className="block text-sm font-medium text-gray-700">品名</label>
+                        <input
+                          type="text"
+                          name="foodName"
+                          placeholder="例如：排骨便當"
+                          value={formData.foodName}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-2.5 rounded-xl border border-orange-200 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all outline-none"
+                        />
+                      </div>
+                      <div className="space-y-1 col-span-1">
+                        <label className="block text-sm font-medium text-gray-700">金額</label>
+                        <input
+                          type="number"
+                          name="foodPrice"
+                          min="0"
+                          placeholder="0"
+                          value={formData.foodPrice}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-2.5 rounded-xl border border-orange-200 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all outline-none bg-white"
+                        />
+                      </div>
                     </div>
                     
                     <div className="grid grid-cols-2 gap-4">
@@ -250,6 +281,7 @@
                           onChange={handleInputChange}
                           className="w-full px-4 py-2.5 rounded-xl border border-orange-200 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all outline-none bg-white"
                         >
+                          <option value="不調整">不調整</option>
                           <option value="不辣">不辣</option>
                           <option value="微辣">微辣</option>
                           <option value="小辣">小辣</option>
@@ -294,16 +326,30 @@
                   </h2>
                   
                   <div className="space-y-4">
-                    <div className="space-y-1">
-                      <label className="block text-sm font-medium text-gray-700">品名</label>
-                      <input
-                        type="text"
-                        name="drinkName"
-                        placeholder="例如：珍珠奶茶"
-                        value={formData.drinkName}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-2.5 rounded-xl border border-amber-200 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all outline-none"
-                      />
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-1 col-span-2">
+                        <label className="block text-sm font-medium text-gray-700">品名</label>
+                        <input
+                          type="text"
+                          name="drinkName"
+                          placeholder="例如：珍珠奶茶"
+                          value={formData.drinkName}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-2.5 rounded-xl border border-amber-200 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all outline-none"
+                        />
+                      </div>
+                      <div className="space-y-1 col-span-1">
+                        <label className="block text-sm font-medium text-gray-700">金額</label>
+                        <input
+                          type="number"
+                          name="drinkPrice"
+                          min="0"
+                          placeholder="0"
+                          value={formData.drinkPrice}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-2.5 rounded-xl border border-amber-200 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all outline-none bg-white"
+                        />
+                      </div>
                     </div>
                     
                     <div className="grid grid-cols-2 gap-4">
