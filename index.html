@@ -96,19 +96,35 @@
           drinkNamePrice = formData.drinkPrice ? `${formData.drinkName} $${formData.drinkPrice}` : formData.drinkName;
         }
 
-        // 整理要送出的資料，有勾選不吃/不喝的項目一律覆蓋成空值
+        // 整理要送出的資料，加入所有可能對應到的變數名稱以相容各種版本的 Apps Script
+        // ⚠️ 這次拿掉了會產生衝突的原始狀態，確保傳給 Google 的絕對是乾淨的字串
         const payload = {
           timestamp,
           nickname: formData.nickname,
           date: formData.date,
-          foodNamePrice,
+          
+          // 吃的處理
+          foodName: foodNamePrice,         // 覆蓋舊變數，確保舊版試算表也能收到
+          foodNamePrice: foodNamePrice,    // 新變數
+          foodPrice: formData.noFood ? '' : formData.foodPrice,
           foodPortion: formData.noFood ? '' : formData.foodPortion,
           foodSpiciness: formData.noFood ? '' : formData.foodSpiciness,
-          noMushroomText,
+          
+          // 🌟 修正不菇邏輯：比照不吃/不喝，勾選時直接顯示「不菇」，沒勾選給絕對空白
+          noMushroom: formData.noFood ? '' : (formData.noMushroom ? '不菇' : ''), 
+          noMushroomText: formData.noFood ? '' : (formData.noMushroom ? '不菇' : ''),
+          
           foodNote: formData.noFood ? '' : formData.foodNote,
-          drinkNamePrice,
-          drinkSweetnessIce,
+          
+          // 喝的處理
+          drinkName: drinkNamePrice,       // 覆蓋舊變數，確保舊版試算表也能收到
+          drinkNamePrice: drinkNamePrice,  // 新變數
+          drinkPrice: formData.noDrink ? '' : formData.drinkPrice,
+          drinkSweetnessIce: formData.noDrink ? '' : drinkSweetnessIce,
+          drinkSweetness: formData.noDrink ? '' : formData.drinkSweetness, 
+          drinkIce: formData.noDrink ? '' : formData.drinkIce,             
           drinkNote: formData.noDrink ? '' : formData.drinkNote,
+          
           totalAmount
         };
 
