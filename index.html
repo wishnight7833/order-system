@@ -29,7 +29,7 @@
     // ============================================================================
     // 🏷️ 應用程式版本號設定
     // ============================================================================
-    const APP_VERSION = "YS1.1";
+    const APP_VERSION = "YS1.2";
 
     function App() {
       const today = new Date().toISOString().split('T')[0];
@@ -37,12 +37,14 @@
       const [formData, setFormData] = useState({
         nickname: '',
         date: today,
+        noFood: false,    // 新增：不吃
         foodName: '',
         foodPrice: '',
         foodPortion: '正常',
         foodSpiciness: '不調整',
         noMushroom: false,
         foodNote: '',
+        noDrink: false,   // 新增：不喝
         drinkName: '',
         drinkPrice: '',
         drinkSweetness: '無糖',
@@ -71,22 +73,42 @@
         const now = new Date();
         const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
-        const totalAmount = (Number(formData.foodPrice) || 0) + (Number(formData.drinkPrice) || 0);
-        const drinkSweetnessIce = `${formData.drinkSweetness}-${formData.drinkIce}`;
+        // 判斷金額（如果不吃/不喝則視為 0）
+        const currentFoodPrice = formData.noFood ? 0 : (Number(formData.foodPrice) || 0);
+        const currentDrinkPrice = formData.noDrink ? 0 : (Number(formData.drinkPrice) || 0);
+        const totalAmount = currentFoodPrice + currentDrinkPrice;
         
-        // 🌟 修改這裡：有勾選就給打勾符號，沒勾選就給空白
-        const noMushroomText = formData.noMushroom ? '✔' : '';
+        // 判斷組合字串
+        const drinkSweetnessIce = formData.noDrink ? '' : `${formData.drinkSweetness}-${formData.drinkIce}`;
+        const noMushroomText = formData.noFood ? '' : (formData.noMushroom ? '✔' : '');
         
-        const foodNamePrice = formData.foodPrice ? `${formData.foodName} $${formData.foodPrice}` : formData.foodName;
-        const drinkNamePrice = formData.drinkPrice ? `${formData.drinkName} $${formData.drinkPrice}` : formData.drinkName;
+        let foodNamePrice = '';
+        if (formData.noFood) {
+          foodNamePrice = '不吃'; // 試算表直接顯示不吃
+        } else {
+          foodNamePrice = formData.foodPrice ? `${formData.foodName} $${formData.foodPrice}` : formData.foodName;
+        }
 
+        let drinkNamePrice = '';
+        if (formData.noDrink) {
+          drinkNamePrice = '不喝'; // 試算表直接顯示不喝
+        } else {
+          drinkNamePrice = formData.drinkPrice ? `${formData.drinkName} $${formData.drinkPrice}` : formData.drinkName;
+        }
+
+        // 整理要送出的資料，有勾選不吃/不喝的項目一律覆蓋成空值
         const payload = {
           timestamp,
-          ...formData,
+          nickname: formData.nickname,
+          date: formData.date,
           foodNamePrice,
+          foodPortion: formData.noFood ? '' : formData.foodPortion,
+          foodSpiciness: formData.noFood ? '' : formData.foodSpiciness,
+          noMushroomText,
+          foodNote: formData.noFood ? '' : formData.foodNote,
           drinkNamePrice,
           drinkSweetnessIce,
-          noMushroomText,
+          drinkNote: formData.noDrink ? '' : formData.drinkNote,
           totalAmount
         };
 
@@ -118,12 +140,14 @@
         setFormData({
           nickname: '',
           date: today,
+          noFood: false,
           foodName: '',
           foodPrice: '',
           foodPortion: '正常',
           foodSpiciness: '不調整',
           noMushroom: false,
           foodNote: '',
+          noDrink: false,
           drinkName: '',
           drinkPrice: '',
           drinkSweetness: '無糖',
@@ -226,185 +250,223 @@
                   </div>
                 </section>
 
-                <section className="space-y-4 bg-orange-50/50 p-4 rounded-2xl border border-orange-100">
-                  <h2 className="text-lg font-bold text-orange-800 flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 text-orange-600"><path d="m16 2-2.3 2.3a3 3 0 0 0 0 4.2l1.8 1.8a3 3 0 0 0 4.2 0L22 8"/><path d="M15 15 3.3 3.3a4.2 4.2 0 0 0 0 6l7.3 7.3c.7.7 2 .7 2.8 0L15 15Zm0 0 7 7"/><path d="m2.1 21.8 6.4-6.3"/><path d="m19 5-7 7"/></svg>
-                    吃的
-                  </h2>
+                <section className="bg-orange-50/50 p-4 rounded-2xl border border-orange-100 transition-all duration-300">
+                  <div className="flex items-center justify-between border-b-2 border-orange-200 pb-2 mb-4">
+                    <h2 className="text-lg font-bold text-orange-800 flex items-center gap-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 text-orange-600"><path d="m16 2-2.3 2.3a3 3 0 0 0 0 4.2l1.8 1.8a3 3 0 0 0 4.2 0L22 8"/><path d="M15 15 3.3 3.3a4.2 4.2 0 0 0 0 6l7.3 7.3c.7.7 2 .7 2.8 0L15 15Zm0 0 7 7"/><path d="m2.1 21.8 6.4-6.3"/><path d="m19 5-7 7"/></svg>
+                      吃的
+                    </h2>
+                    
+                    <div className="flex items-center gap-2 px-2 py-1 bg-white rounded-lg shadow-sm border border-orange-200">
+                      <input
+                        type="checkbox"
+                        id="noFood"
+                        name="noFood"
+                        checked={formData.noFood}
+                        onChange={handleInputChange}
+                        className="w-4 h-4 text-orange-500 border-gray-300 rounded focus:ring-orange-500 cursor-pointer accent-orange-500"
+                      />
+                      <label htmlFor="noFood" className="text-sm font-bold text-gray-700 cursor-pointer select-none">
+                        不吃
+                      </label>
+                    </div>
+                  </div>
                   
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="space-y-1 col-span-2">
-                        <label className="block text-sm font-medium text-gray-700">品名</label>
+                  {/* 如果勾選不吃，則隱藏下方欄位 */}
+                  {!formData.noFood && (
+                    <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="space-y-1 col-span-2">
+                          <label className="block text-sm font-medium text-gray-700">品名</label>
+                          <input
+                            type="text"
+                            name="foodName"
+                            placeholder="例如：排骨便當"
+                            value={formData.foodName}
+                            onChange={handleInputChange}
+                            className="w-full px-4 py-2.5 rounded-xl border border-orange-200 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all outline-none"
+                          />
+                        </div>
+                        <div className="space-y-1 col-span-1">
+                          <label className="block text-sm font-medium text-gray-700">金額</label>
+                          <input
+                            type="number"
+                            name="foodPrice"
+                            min="0"
+                            placeholder="0"
+                            value={formData.foodPrice}
+                            onChange={handleInputChange}
+                            className="w-full px-4 py-2.5 rounded-xl border border-orange-200 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all outline-none bg-white"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <label className="block text-sm font-medium text-gray-700">主食份量</label>
+                          <select
+                            name="foodPortion"
+                            value={formData.foodPortion}
+                            onChange={handleInputChange}
+                            className="w-full px-4 py-2.5 rounded-xl border border-orange-200 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all outline-none bg-white"
+                          >
+                            <option value="正常">正常</option>
+                            <option value="飯少">飯少</option>
+                            <option value="半飯">半飯</option>
+                            <option value="加飯">加飯</option>
+                            <option value="麵少">麵少</option>
+                            <option value="加麵">加麵</option>
+                          </select>
+                        </div>
+                        
+                        <div className="space-y-1">
+                          <label className="block text-sm font-medium text-gray-700">辣度</label>
+                          <select
+                            name="foodSpiciness"
+                            value={formData.foodSpiciness}
+                            onChange={handleInputChange}
+                            className="w-full px-4 py-2.5 rounded-xl border border-orange-200 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all outline-none bg-white"
+                          >
+                            <option value="不調整">不調整</option>
+                            <option value="不辣">不辣</option>
+                            <option value="微辣">微辣</option>
+                            <option value="小辣">小辣</option>
+                            <option value="中辣">中辣</option>
+                            <option value="大辣">大辣</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 px-1">
+                        <input
+                          type="checkbox"
+                          id="noMushroom"
+                          name="noMushroom"
+                          checked={formData.noMushroom}
+                          onChange={handleInputChange}
+                          className="w-5 h-5 text-orange-500 border-gray-300 rounded focus:ring-orange-500 cursor-pointer accent-orange-500"
+                        />
+                        <label htmlFor="noMushroom" className="text-sm font-medium text-gray-700 cursor-pointer select-none">
+                          不菇 (不要香菇、金針菇等任何菇類) 🍄❌
+                        </label>
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <label className="block text-sm font-medium text-gray-700">備註 (選填)</label>
                         <input
                           type="text"
-                          name="foodName"
-                          placeholder="例如：排骨便當"
-                          value={formData.foodName}
+                          name="foodNote"
+                          placeholder="例如：不要香菜、多一點醬"
+                          value={formData.foodNote}
                           onChange={handleInputChange}
                           className="w-full px-4 py-2.5 rounded-xl border border-orange-200 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all outline-none"
                         />
                       </div>
-                      <div className="space-y-1 col-span-1">
-                        <label className="block text-sm font-medium text-gray-700">金額</label>
-                        <input
-                          type="number"
-                          name="foodPrice"
-                          min="0"
-                          placeholder="0"
-                          value={formData.foodPrice}
-                          onChange={handleInputChange}
-                          className="w-full px-4 py-2.5 rounded-xl border border-orange-200 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all outline-none bg-white"
-                        />
-                      </div>
                     </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <label className="block text-sm font-medium text-gray-700">主食份量</label>
-                        <select
-                          name="foodPortion"
-                          value={formData.foodPortion}
-                          onChange={handleInputChange}
-                          className="w-full px-4 py-2.5 rounded-xl border border-orange-200 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all outline-none bg-white"
-                        >
-                          <option value="正常">正常</option>
-                          <option value="飯少">飯少</option>
-                          <option value="半飯">半飯</option>
-                          <option value="加飯">加飯</option>
-                          <option value="麵少">麵少</option>
-                          <option value="加麵">加麵</option>
-                        </select>
-                      </div>
-                      
-                      <div className="space-y-1">
-                        <label className="block text-sm font-medium text-gray-700">辣度</label>
-                        <select
-                          name="foodSpiciness"
-                          value={formData.foodSpiciness}
-                          onChange={handleInputChange}
-                          className="w-full px-4 py-2.5 rounded-xl border border-orange-200 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all outline-none bg-white"
-                        >
-                          <option value="不調整">不調整</option>
-                          <option value="不辣">不辣</option>
-                          <option value="微辣">微辣</option>
-                          <option value="小辣">小辣</option>
-                          <option value="中辣">中辣</option>
-                          <option value="大辣">大辣</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 px-1">
-                      <input
-                        type="checkbox"
-                        id="noMushroom"
-                        name="noMushroom"
-                        checked={formData.noMushroom}
-                        onChange={handleInputChange}
-                        className="w-5 h-5 text-orange-500 border-gray-300 rounded focus:ring-orange-500 cursor-pointer accent-orange-500"
-                      />
-                      <label htmlFor="noMushroom" className="text-sm font-medium text-gray-700 cursor-pointer select-none">
-                        不菇 (不要香菇、金針菇等任何菇類) 🍄❌
-                      </label>
-                    </div>
-                    
-                    <div className="space-y-1">
-                      <label className="block text-sm font-medium text-gray-700">備註 (選填)</label>
-                      <input
-                        type="text"
-                        name="foodNote"
-                        placeholder="例如：不要香菜、多一點醬"
-                        value={formData.foodNote}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-2.5 rounded-xl border border-orange-200 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all outline-none"
-                      />
-                    </div>
-                  </div>
+                  )}
                 </section>
 
-                <section className="space-y-4 bg-amber-50/50 p-4 rounded-2xl border border-amber-100">
-                  <h2 className="text-lg font-bold text-amber-800 flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 text-amber-600"><path d="M10 2v2"/><path d="M14 2v2"/><path d="M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h14a4 4 0 1 1 0 8h-1"/><path d="M6 2v2"/></svg>
-                    喝的
-                  </h2>
+                <section className="bg-amber-50/50 p-4 rounded-2xl border border-amber-100 transition-all duration-300">
+                  <div className="flex items-center justify-between border-b-2 border-amber-200 pb-2 mb-4">
+                    <h2 className="text-lg font-bold text-amber-800 flex items-center gap-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 text-amber-600"><path d="M10 2v2"/><path d="M14 2v2"/><path d="M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h14a4 4 0 1 1 0 8h-1"/><path d="M6 2v2"/></svg>
+                      喝的
+                    </h2>
+                    
+                    <div className="flex items-center gap-2 px-2 py-1 bg-white rounded-lg shadow-sm border border-amber-200">
+                      <input
+                        type="checkbox"
+                        id="noDrink"
+                        name="noDrink"
+                        checked={formData.noDrink}
+                        onChange={handleInputChange}
+                        className="w-4 h-4 text-amber-500 border-gray-300 rounded focus:ring-amber-500 cursor-pointer accent-amber-500"
+                      />
+                      <label htmlFor="noDrink" className="text-sm font-bold text-gray-700 cursor-pointer select-none">
+                        不喝
+                      </label>
+                    </div>
+                  </div>
                   
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="space-y-1 col-span-2">
-                        <label className="block text-sm font-medium text-gray-700">品名</label>
+                  {/* 如果勾選不喝，則隱藏下方欄位 */}
+                  {!formData.noDrink && (
+                    <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="space-y-1 col-span-2">
+                          <label className="block text-sm font-medium text-gray-700">品名</label>
+                          <input
+                            type="text"
+                            name="drinkName"
+                            placeholder="例如：珍珠奶茶"
+                            value={formData.drinkName}
+                            onChange={handleInputChange}
+                            className="w-full px-4 py-2.5 rounded-xl border border-amber-200 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all outline-none"
+                          />
+                        </div>
+                        <div className="space-y-1 col-span-1">
+                          <label className="block text-sm font-medium text-gray-700">金額</label>
+                          <input
+                            type="number"
+                            name="drinkPrice"
+                            min="0"
+                            placeholder="0"
+                            value={formData.drinkPrice}
+                            onChange={handleInputChange}
+                            className="w-full px-4 py-2.5 rounded-xl border border-amber-200 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all outline-none bg-white"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <label className="block text-sm font-medium text-gray-700">甜度</label>
+                          <select
+                            name="drinkSweetness"
+                            value={formData.drinkSweetness}
+                            onChange={handleInputChange}
+                            className="w-full px-4 py-2.5 rounded-xl border border-amber-200 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all outline-none bg-white"
+                          >
+                            <option value="正常糖">正常糖</option>
+                            <option value="少糖">少糖 (8分)</option>
+                            <option value="半糖">半糖 (5分)</option>
+                            <option value="微糖">微糖 (3分)</option>
+                            <option value="一分糖">一分糖</option>
+                            <option value="無糖">無糖</option>
+                          </select>
+                        </div>
+                        
+                        <div className="space-y-1">
+                          <label className="block text-sm font-medium text-gray-700">冰塊</label>
+                          <select
+                            name="drinkIce"
+                            value={formData.drinkIce}
+                            onChange={handleInputChange}
+                            className="w-full px-4 py-2.5 rounded-xl border border-amber-200 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all outline-none bg-white"
+                          >
+                            <option value="正常冰">正常冰</option>
+                            <option value="少冰">少冰</option>
+                            <option value="微冰">微冰</option>
+                            <option value="去冰">去冰</option>
+                            <option value="完全去冰">完全去冰</option>
+                            <option value="常溫">常溫</option>
+                            <option value="熱">熱</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="block text-sm font-medium text-gray-700">備註 (選填)</label>
                         <input
                           type="text"
-                          name="drinkName"
-                          placeholder="例如：珍珠奶茶"
-                          value={formData.drinkName}
+                          name="drinkNote"
+                          placeholder="例如：換燕麥奶、加波霸"
+                          value={formData.drinkNote}
                           onChange={handleInputChange}
                           className="w-full px-4 py-2.5 rounded-xl border border-amber-200 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all outline-none"
                         />
                       </div>
-                      <div className="space-y-1 col-span-1">
-                        <label className="block text-sm font-medium text-gray-700">金額</label>
-                        <input
-                          type="number"
-                          name="drinkPrice"
-                          min="0"
-                          placeholder="0"
-                          value={formData.drinkPrice}
-                          onChange={handleInputChange}
-                          className="w-full px-4 py-2.5 rounded-xl border border-amber-200 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all outline-none bg-white"
-                        />
-                      </div>
                     </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <label className="block text-sm font-medium text-gray-700">甜度</label>
-                        <select
-                          name="drinkSweetness"
-                          value={formData.drinkSweetness}
-                          onChange={handleInputChange}
-                          className="w-full px-4 py-2.5 rounded-xl border border-amber-200 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all outline-none bg-white"
-                        >
-                          <option value="正常糖">正常糖</option>
-                          <option value="少糖">少糖 (8分)</option>
-                          <option value="半糖">半糖 (5分)</option>
-                          <option value="微糖">微糖 (3分)</option>
-                          <option value="一分糖">一分糖</option>
-                          <option value="無糖">無糖</option>
-                        </select>
-                      </div>
-                      
-                      <div className="space-y-1">
-                        <label className="block text-sm font-medium text-gray-700">冰塊</label>
-                        <select
-                          name="drinkIce"
-                          value={formData.drinkIce}
-                          onChange={handleInputChange}
-                          className="w-full px-4 py-2.5 rounded-xl border border-amber-200 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all outline-none bg-white"
-                        >
-                          <option value="正常冰">正常冰</option>
-                          <option value="少冰">少冰</option>
-                          <option value="微冰">微冰</option>
-                          <option value="去冰">去冰</option>
-                          <option value="完全去冰">完全去冰</option>
-                          <option value="常溫">常溫</option>
-                          <option value="熱">熱</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="block text-sm font-medium text-gray-700">備註 (選填)</label>
-                      <input
-                        type="text"
-                        name="drinkNote"
-                        placeholder="例如：換燕麥奶、加波霸"
-                        value={formData.drinkNote}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-2.5 rounded-xl border border-amber-200 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all outline-none"
-                      />
-                    </div>
-                  </div>
+                  )}
                 </section>
 
                 <button
