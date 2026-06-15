@@ -24,7 +24,8 @@
     // ============================================================================
     // ⚠️ 您的 Google Apps Script URL
     // ============================================================================
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyNzmSwDfd_LgMNqrqmI0XEKPJNmg6lgTnwiSD5jiYm330gIfe5gj7yYR4uoYexKdtqSg/exec";
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx9HLXBILdN2VO0T28pu5xj33dt0dlMHL-8BD9hEICpdA9St-mEHEMU-2S9puyZ1iZzZg/exec";
+    
 
     // ============================================================================
     // 🏷️ 應用程式版本號設定
@@ -73,58 +74,60 @@
         const now = new Date();
         const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
-        // 判斷金額（如果不吃/不喝則視為 0）
+        // 計算金額（如果不吃/不喝則視為 0）
         const currentFoodPrice = formData.noFood ? 0 : (Number(formData.foodPrice) || 0);
         const currentDrinkPrice = formData.noDrink ? 0 : (Number(formData.drinkPrice) || 0);
         const totalAmount = currentFoodPrice + currentDrinkPrice;
-        
-        // 判斷組合字串
-        const drinkSweetnessIce = formData.noDrink ? '' : `${formData.drinkSweetness}-${formData.drinkIce}`;
-        const noMushroomText = formData.noFood ? '' : (formData.noMushroom ? '✔' : '');
-        
-        let foodNamePrice = '';
+
+        // ======= 吃的資料整理 =======
+        let finalFoodNamePrice = '';
         if (formData.noFood) {
-          foodNamePrice = '不吃'; // 試算表直接顯示不吃
+          finalFoodNamePrice = '不吃';
         } else {
-          foodNamePrice = formData.foodPrice ? `${formData.foodName} $${formData.foodPrice}` : formData.foodName;
+          finalFoodNamePrice = formData.foodPrice ? `${formData.foodName} $${formData.foodPrice}` : (formData.foodName || '');
         }
+        const finalFoodPortion = formData.noFood ? '' : formData.foodPortion;
+        const finalFoodSpiciness = formData.noFood ? '' : formData.foodSpiciness;
+        // 改為絕對空白 ''，防止 Google 試算表將任何符號判定為 TRUE (是)
+        const finalNoMushroom = formData.noFood ? '' : (formData.noMushroom ? '不菇' : '');
+        const finalFoodNote = formData.noFood ? '' : (formData.foodNote || '');
 
-        let drinkNamePrice = '';
+        // ======= 喝的資料整理 =======
+        let finalDrinkNamePrice = '';
         if (formData.noDrink) {
-          drinkNamePrice = '不喝'; // 試算表直接顯示不喝
+          finalDrinkNamePrice = '不喝';
         } else {
-          drinkNamePrice = formData.drinkPrice ? `${formData.drinkName} $${formData.drinkPrice}` : formData.drinkName;
+          finalDrinkNamePrice = formData.drinkPrice ? `${formData.drinkName} $${formData.drinkPrice}` : (formData.drinkName || '');
         }
+        const finalDrinkSweetnessIce = formData.noDrink ? '' : `${formData.drinkSweetness}-${formData.drinkIce}`;
+        const finalDrinkNote = formData.noDrink ? '' : (formData.drinkNote || '');
 
-        // 整理要送出的資料，加入所有可能對應到的變數名稱以相容各種版本的 Apps Script
-        // ⚠️ 這次拿掉了會產生衝突的原始狀態，確保傳給 Google 的絕對是乾淨的字串
+        // 整理要送出的資料，確保傳送絕對乾淨的字串
         const payload = {
           timestamp,
           nickname: formData.nickname,
           date: formData.date,
-          
+
           // 吃的處理
-          foodName: foodNamePrice,         // 覆蓋舊變數，確保舊版試算表也能收到
-          foodNamePrice: foodNamePrice,    // 新變數
-          foodPrice: formData.noFood ? '' : formData.foodPrice,
-          foodPortion: formData.noFood ? '' : formData.foodPortion,
-          foodSpiciness: formData.noFood ? '' : formData.foodSpiciness,
-          
-          // 🌟 修正不菇邏輯：比照不吃/不喝，勾選時直接顯示「不菇」，沒勾選給絕對空白
-          noMushroom: formData.noFood ? '' : (formData.noMushroom ? '不菇' : ''), 
-          noMushroomText: formData.noFood ? '' : (formData.noMushroom ? '不菇' : ''),
-          
-          foodNote: formData.noFood ? '' : formData.foodNote,
-          
+          foodNamePrice: finalFoodNamePrice,
+          foodName: finalFoodNamePrice, 
+          foodPrice: formData.noFood ? 0 : formData.foodPrice,
+          foodPortion: finalFoodPortion,
+          foodSpiciness: finalFoodSpiciness,
+          noMushroomText: finalNoMushroom,
+          noMushroom: finalNoMushroom,  
+          foodNote: finalFoodNote,
+
           // 喝的處理
-          drinkName: drinkNamePrice,       // 覆蓋舊變數，確保舊版試算表也能收到
-          drinkNamePrice: drinkNamePrice,  // 新變數
-          drinkPrice: formData.noDrink ? '' : formData.drinkPrice,
-          drinkSweetnessIce: formData.noDrink ? '' : drinkSweetnessIce,
-          drinkSweetness: formData.noDrink ? '' : formData.drinkSweetness, 
-          drinkIce: formData.noDrink ? '' : formData.drinkIce,             
-          drinkNote: formData.noDrink ? '' : formData.drinkNote,
-          
+          drinkNamePrice: finalDrinkNamePrice,
+          drinkName: finalDrinkNamePrice, 
+          drinkPrice: formData.noDrink ? 0 : formData.drinkPrice,
+          drinkSweetnessIce: finalDrinkSweetnessIce,
+          // 防呆機制：同時覆蓋舊變數，確保即使 Apps Script 沒更新也能拿到整合好的字串
+          drinkSweetness: finalDrinkSweetnessIce,
+          drinkIce: '', 
+          drinkNote: finalDrinkNote,
+
           totalAmount
         };
 
