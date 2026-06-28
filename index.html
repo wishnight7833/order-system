@@ -12,7 +12,7 @@
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   
-  <!-- 載入 Babel 以便在瀏覽器中編譯 JSX (鎖定穩定版本以避免最新版的 import 錯誤) -->
+  <!-- 載入 Babel 以便在瀏覽器中編譯 JSX (鎖定穩定版本) -->
   <script src="https://unpkg.com/@babel/standalone@7.23.6/babel.min.js"></script>
 </head>
 <body class="bg-gray-100">
@@ -29,7 +29,7 @@
     // ============================================================================
     // 🏷️ 應用程式版本號設定
     // ============================================================================
-    const APP_VERSION = "YS1.25";
+    const APP_VERSION = "YS1.3";
 
     function App() {
       const today = new Date().toISOString().split('T')[0];
@@ -53,19 +53,49 @@
       });
 
       const [status, setStatus] = useState('idle');
+      // 新增：用來控制錯誤提示訊息的狀態
+      const [errorMessage, setErrorMessage] = useState('');
 
       const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
         const inputValue = type === 'checkbox' ? checked : value;
         setFormData(prev => ({ ...prev, [name]: inputValue }));
+        // 只要使用者有修改內容，就清空錯誤提示
+        setErrorMessage('');
       };
 
       const handleSubmit = async (e) => {
         e.preventDefault();
         
-        if (!formData.nickname.trim()) {
-          alert("請填寫暱稱！");
+        let finalNickname = formData.nickname.trim();
+
+        // 🌟 彩蛋：魔法少女模式
+        if (finalNickname === "。") {
+          finalNickname = "魔法少女小圓☆";
+        }
+
+        // 🌟 仙女模式判定 (同時勾選不吃且不喝)
+        const isFairy = formData.noFood && formData.noDrink;
+        if (isFairy) {
+          finalNickname = `${finalNickname}-今天當仙女`;
+        }
+
+        // 防呆1：檢查暱稱
+        if (!finalNickname) {
+          setErrorMessage("請填寫暱稱！");
           return;
+        }
+
+        // 防呆2：如果不是仙女模式，檢查品名是否為空
+        if (!isFairy) {
+          if (!formData.noFood && !formData.foodName.trim()) {
+            setErrorMessage("您沒有勾選「不吃」，請告訴我們您想吃什麼喔！(需填寫品名)");
+            return;
+          }
+          if (!formData.noDrink && !formData.drinkName.trim()) {
+            setErrorMessage("您沒有勾選「不喝」，請告訴我們您想喝什麼喔！(需填寫品名)");
+            return;
+          }
         }
 
         setStatus('submitting');
@@ -73,27 +103,43 @@
         const now = new Date();
         const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
-        // ======= 吃的資料整理 =======
-        const finalFoodName = formData.noFood ? '不吃' : (formData.foodName || '');
-        const finalFoodPrice = formData.noFood ? 0 : (Number(formData.foodPrice) || 0);
-        const finalFoodPortion = formData.noFood ? '' : formData.foodPortion;
-        const finalFoodSpiciness = formData.noFood ? '' : formData.foodSpiciness;
-        const finalNoMushroom = formData.noFood ? '' : (formData.noMushroom ? '不菇' : '');
-        const finalFoodNote = formData.noFood ? '' : (formData.foodNote || '');
+        // 準備送出的最終變數
+        let finalFoodName = '';
+        let finalFoodPrice = 0;
+        let finalFoodPortion = '';
+        let finalFoodSpiciness = '';
+        let finalNoMushroom = '';
+        let finalFoodNote = '';
 
-        // ======= 喝的資料整理 =======
-        const finalDrinkName = formData.noDrink ? '不喝' : (formData.drinkName || '');
-        const finalDrinkPrice = formData.noDrink ? 0 : (Number(formData.drinkPrice) || 0);
-        const finalDrinkSweetnessIce = formData.noDrink ? '' : `${formData.drinkSweetness}-${formData.drinkIce}`;
-        const finalDrinkNote = formData.noDrink ? '' : (formData.drinkNote || '');
-        
+        let finalDrinkName = '';
+        let finalDrinkPrice = 0;
+        let finalDrinkSweetnessIce = '';
+        let finalDrinkNote = '';
+
+        // 如果「不是」仙女模式，才帶入各項資料；否則全數留空
+        if (!isFairy) {
+          // 吃的資料整理
+          finalFoodName = formData.noFood ? '不吃' : (formData.foodName.trim() || '');
+          finalFoodPrice = formData.noFood ? 0 : (Number(formData.foodPrice) || 0);
+          finalFoodPortion = formData.noFood ? '' : formData.foodPortion;
+          finalFoodSpiciness = formData.noFood ? '' : formData.foodSpiciness;
+          finalNoMushroom = formData.noFood ? '' : (formData.noMushroom ? '不菇' : '');
+          finalFoodNote = formData.noFood ? '' : (formData.foodNote || '');
+
+          // 喝的資料整理
+          finalDrinkName = formData.noDrink ? '不喝' : (formData.drinkName.trim() || '');
+          finalDrinkPrice = formData.noDrink ? 0 : (Number(formData.drinkPrice) || 0);
+          finalDrinkSweetnessIce = formData.noDrink ? '' : `${formData.drinkSweetness}-${formData.drinkIce}`;
+          finalDrinkNote = formData.noDrink ? '' : (formData.drinkNote || '');
+        }
+
         // 總金額
         const totalAmount = finalFoodPrice + finalDrinkPrice;
 
-        // 整理要送出的資料 (將品名與金額獨立拆開)
+        // 整理要送出的資料 payload
         const payload = {
           timestamp,
-          nickname: formData.nickname,
+          nickname: finalNickname,
           date: formData.date,
 
           foodName: finalFoodName,
@@ -154,6 +200,7 @@
           drinkNote: ''
         });
         setStatus('idle');
+        setErrorMessage(''); // 一併重置錯誤訊息
       };
 
       return (
@@ -469,29 +516,39 @@
                   )}
                 </section>
 
-                <button
-                  type="submit"
-                  disabled={status === 'submitting'}
-                  className={`w-full py-3.5 rounded-xl font-bold text-white shadow-lg flex items-center justify-center gap-2 transition-all 
-                    ${status === 'submitting' 
-                      ? 'bg-orange-400 cursor-not-allowed' 
-                      : 'bg-orange-500 hover:bg-orange-600 hover:shadow-orange-500/30 hover:-translate-y-0.5'}`}
-                >
-                  {status === 'submitting' ? (
-                    <span className="flex items-center gap-2">
-                      <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      處理中...
-                    </span>
-                  ) : (
-                    <>
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><line x1="22" x2="11" y1="2" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                      確認送出
-                    </>
+                <div className="space-y-4">
+                  {/* 錯誤提示框 (動畫顯示) */}
+                  {errorMessage && (
+                    <div className="bg-red-50 text-red-600 p-4 rounded-xl text-sm font-bold flex items-center justify-center gap-2 border border-red-200 animate-bounce shadow-sm">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+                      {errorMessage}
+                    </div>
                   )}
-                </button>
+
+                  <button
+                    type="submit"
+                    disabled={status === 'submitting'}
+                    className={`w-full py-3.5 rounded-xl font-bold text-white shadow-lg flex items-center justify-center gap-2 transition-all 
+                      ${status === 'submitting' 
+                        ? 'bg-orange-400 cursor-not-allowed' 
+                        : 'bg-orange-500 hover:bg-orange-600 hover:shadow-orange-500/30 hover:-translate-y-0.5'}`}
+                  >
+                    {status === 'submitting' ? (
+                      <span className="flex items-center gap-2">
+                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        處理中...
+                      </span>
+                    ) : (
+                      <>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><line x1="22" x2="11" y1="2" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                        確認送出
+                      </>
+                    )}
+                  </button>
+                </div>
               </form>
             )}
           </div>
